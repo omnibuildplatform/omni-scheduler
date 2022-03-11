@@ -1,0 +1,6 @@
+
+### Build
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{scheduler code path}/libsol
+go build main.go
+
+
