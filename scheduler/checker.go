@@ -1,26 +1,19 @@
 package scheduler
 
-/*
-#cgo CFLAGS: -I../libsolv
-#cgo LDFLAGS: -L../libsolv -lsolv
-
-#include "pool.h"
-*/
-import "C"
-
 import (
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/opensourceways/scheduler/models"
+	"github.com/opensourceways/scheduler/solv"
 )
 
 func Test() {
-	p := C.pool_create()
-	defer C.pool_free(p)
+	p := solv.NewPool()
+	defer p.Free()
 
-	fmt.Println(p.nsolvables)
+	fmt.Println(p.GetSolvablesNum())
 
 	fmt.Println("done")
 }
@@ -46,6 +39,8 @@ type Checker struct {
 	prptype       string
 	packs         []string // pakcage's name list
 	genMetaAlgo   int
+
+	pool *solv.Pool
 }
 
 func NewChecker(reporoot, prp, arch string) *Checker {
@@ -99,4 +94,21 @@ func (c *Checker) Setup() (string, string) {
 	c.genMetaAlgo = 0
 
 	return schedStatusScheduling, ""
+}
+
+func (c *Checker) PreparePool() {
+	pool := solv.NewPool()
+
+	c.pool = pool
+
+	/*
+		for _, path := range c.prpSearchPath {
+			// check prp access
+
+		}
+	*/
+}
+
+func (c *Checker) addRepo(path string) error {
+	return nil
 }
