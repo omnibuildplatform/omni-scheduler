@@ -111,6 +111,7 @@ func NewPool() *Pool {
 
 func (p *Pool) Free() {
 	C.pool_free(p.pool)
+	p.pool = nil
 }
 
 func (p *Pool) GetPool() *C.struct_s_Pool {
@@ -121,7 +122,15 @@ func (p *Pool) GetSolvablesNum() int {
 	return int(p.pool.nsolvables)
 }
 
-func (p *Pool) RepoFromBins(prp, dir string, bins []string) func(string) error {
+func (p *Pool) isPoolUnavailable() bool {
+	return p.pool == nil
+}
+
+func (p *Pool) RepoFromBins(prp, dir string, bins []string) (func(string) error, error) {
+	if p.isPoolUnavailable() {
+		return nil, fmt.Errorf("pool is unavailable")
+	}
+
 	repo := p.NewRepo(prp)
 
 	rd := repo.repoAddRepoData(0)
@@ -145,7 +154,7 @@ func (p *Pool) RepoFromBins(prp, dir string, bins []string) func(string) error {
 	repo.repoSetStr(C.SOLVID_META, p.tag.tagBuildserviceRepocookie, repoCOOKIE)
 	repo.repoInternalize()
 
-	return rd.save
+	return rd.save, nil
 }
 
 func (p *Pool) NewRepo(name string) *Repo {
