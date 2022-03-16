@@ -97,7 +97,7 @@ func (c *Checker) Setup() (string, string) {
 	return schedStatusScheduling, ""
 }
 
-func (c *Checker) PreparePool1() (pool *solv.Pool, status string, err error) {
+func (c *Checker) PreparePool() (pool *solv.Pool, status string, err error) {
 	pool = solv.NewPool()
 
 	defer func() {

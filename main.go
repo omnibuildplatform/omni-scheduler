@@ -11,6 +11,10 @@ import (
 func main() {
 	scheduler.Test()
 
+	testRepoScan()
+}
+
+func testRepoScan() {
 	args := os.Args
 	fmt.Println(args)
 

@@ -13,14 +13,8 @@ type buildRepo struct {
 }
 
 func addRepoScan(gctx *GCtx, prp, arch string, pool *solv.Pool) error {
-	fmt.Println("fuck")
-
-	fmt.Println(arch)
-
 	dir := filepath.Join(gctx.repoRoot, prp, arch, ":full")
 	solvFile := dir + ".solv"
-
-	fmt.Println(dir)
 
 	files, err := os.ReadDir(dir)
 	if err != nil {
@@ -35,8 +29,6 @@ func addRepoScan(gctx *GCtx, prp, arch string, pool *solv.Pool) error {
 	bins := make([]string, 0, 2*len(files))
 
 	for _, file := range files {
-		fmt.Println(file.Name())
-
 		if name := file.Name(); strings.HasSuffix(name, ".rpm") {
 			info, err := file.Info()
 			if err != nil {
@@ -49,8 +41,6 @@ func addRepoScan(gctx *GCtx, prp, arch string, pool *solv.Pool) error {
 			)
 		}
 	}
-
-	fmt.Println(bins)
 
 	save, err := pool.RepoFromBins(prp, dir, bins)
 	if err != nil {
