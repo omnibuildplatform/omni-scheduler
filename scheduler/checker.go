@@ -29,6 +29,7 @@ const (
 type Checker struct {
 	gctx       *GCtx
 	prp        string // format: project/repository
+	arch       string
 	project    string
 	repository string
 	gdst       string
@@ -39,18 +40,18 @@ type Checker struct {
 	prptype       string
 	packs         []string // pakcage's name list
 	genMetaAlgo   int
-
-	pool *solv.Pool
 }
 
-func NewChecker(reporoot, prp, arch string) *Checker {
+func NewChecker(gctx *GCtx, prp, arch string) *Checker {
 	v := strings.Split(prp, prpSeparator)
 
 	return &Checker{
+		gctx:       gctx,
 		prp:        prp,
+		arch:       arch,
 		project:    v[0],
 		repository: v[1],
-		gdst:       fmt.Sprintf("%s/%s/%s", reporoot, prp, arch),
+		gdst:       fmt.Sprintf("%s/%s/%s", gctx.repoRoot, prp, arch),
 	}
 }
 
@@ -96,19 +97,30 @@ func (c *Checker) Setup() (string, string) {
 	return schedStatusScheduling, ""
 }
 
-func (c *Checker) PreparePool() {
-	pool := solv.NewPool()
+func (c *Checker) PreparePool1() (pool *solv.Pool, status string, err error) {
+	pool = solv.NewPool()
 
-	c.pool = pool
-
-	/*
-		for _, path := range c.prpSearchPath {
-			// check prp access
-
+	defer func() {
+		if err != nil {
+			pool.Free()
+			pool = nil
 		}
-	*/
+	}()
+
+	for _, prp := range c.prpSearchPath {
+		// check prp access
+
+		if err = c.addRepo(pool, prp); err != nil {
+			return
+		}
+
+	}
+
+	status = schedStatusScheduling
+
+	return
 }
 
-func (c *Checker) addRepo(path string) error {
-	return nil
+func (c *Checker) addRepo(pool *solv.Pool, prp string) error {
+	return addRepoScan(c.gctx, prp, c.arch, pool)
 }
