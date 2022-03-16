@@ -8,6 +8,7 @@ package solv
 #include <stdlib.h>
 #include "pool.h"
 #include "repo.h"
+#include "repo_solv.h"
 #include "repo_write.h"
 #include "repo_rpmdb.h"
 
@@ -126,6 +127,11 @@ func (p *Pool) isPoolUnavailable() bool {
 	return p.pool == nil
 }
 
+func (p *Pool) RepoFromSolvFile(prp, filename string) error {
+	repo := p.NewRepo(prp)
+	return repo.addSolv(filename)
+}
+
 func (p *Pool) RepoFromBins(prp, dir string, bins []string) (func(string) error, error) {
 	if p.isPoolUnavailable() {
 		return nil, fmt.Errorf("pool is unavailable")
@@ -133,7 +139,7 @@ func (p *Pool) RepoFromBins(prp, dir string, bins []string) (func(string) error,
 
 	repo := p.NewRepo(prp)
 
-	rd := repo.repoAddRepoData(0)
+	rd := repo.addRepoData(0)
 
 	n := len(bins)
 
@@ -151,8 +157,8 @@ func (p *Pool) RepoFromBins(prp, dir string, bins []string) (func(string) error,
 		rd.addBin(dir, bin, bins[i+1], p)
 	}
 
-	repo.repoSetStr(C.SOLVID_META, p.tag.tagBuildserviceRepocookie, repoCOOKIE)
-	repo.repoInternalize()
+	repo.setStr(C.SOLVID_META, p.tag.tagBuildserviceRepocookie, repoCOOKIE)
+	repo.internalize()
 
 	return rd.save, nil
 }
@@ -170,22 +176,44 @@ type Repo struct {
 	repo *C.struct_s_Repo
 }
 
-func (r *Repo) repoAddRepoData(flag int) *RepoData {
-	rd := C.repo_add_repodata(r.repo, C.int(0))
+func (r *Repo) addRepoData(flag int) *RepoData {
+	rd := C.repo_add_repodata(r.repo, C.int(flag))
 
 	return &RepoData{
 		data: rd,
 	}
 }
 
-func (r *Repo) repoSetStr(solvid, key C.int, str string) {
+func (r *Repo) addSolv(filename string) error {
+	s := C.CString(filename)
+	defer C.free(unsafe.Pointer(s))
+
+	w := C.CString("r")
+	defer C.free(unsafe.Pointer(w))
+
+	fp := C.fopen(s, w)
+	if fp == nil {
+		return fmt.Errorf("can't open file:%s", filename)
+	}
+	defer C.fclose(fp)
+
+	v := C.repo_add_solv(r.repo, fp, C.int(0))
+
+	if v != 0 {
+		return fmt.Errorf("repo_add_solv return:%d for solv file:%s", v, filename)
+	}
+
+	return nil
+}
+
+func (r *Repo) setStr(solvid, key C.int, str string) {
 	cs := C.CString(str)
 	defer C.free(unsafe.Pointer(cs))
 
 	C.repo_set_str(r.repo, solvid, key, cs)
 }
 
-func (r *Repo) repoInternalize() {
+func (r *Repo) internalize() {
 	C.repo_internalize(r.repo)
 }
 
