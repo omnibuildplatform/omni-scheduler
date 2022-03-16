@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/opensourceways/scheduler/models"
-	"github.com/opensourceways/scheduler/scheduler"
+	"github.com/opensourceways/omni-scheduler/models"
+	"github.com/opensourceways/omni-scheduler/scheduler"
 )
 
 func main() {
