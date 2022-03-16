@@ -1,3 +1,3 @@
-module github.com/opensourceways/scheduler
+module github.com/opensourceways/omni-scheduler
 
 go 1.16

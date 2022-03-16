@@ -1,6 +1,6 @@
 package scheduler
 
-import "github.com/opensourceways/scheduler/models"
+import "github.com/opensourceways/omni-scheduler/models"
 
 type projectLastCheck map[string]string // key: package name
 

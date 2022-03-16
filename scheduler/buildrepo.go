@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/opensourceways/scheduler/solv"
+	"github.com/opensourceways/omni-scheduler/solv"
 )
 
 type buildRepo struct {

@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/opensourceways/scheduler/models"
-	"github.com/opensourceways/scheduler/solv"
+	"github.com/opensourceways/omni-scheduler/models"
+	"github.com/opensourceways/omni-scheduler/solv"
 )
 
 func Test() {
