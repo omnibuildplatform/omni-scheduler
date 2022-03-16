@@ -26,6 +26,10 @@ const (
 	schedStatusScheduling = "scheduling"
 )
 
+func genprp(project, repo string) string {
+	return fmt.Sprintf("%s%s%s", project, prpSeparator, repo)
+}
+
 type Checker struct {
 	gctx       *GCtx
 	prp        string // format: project/repository

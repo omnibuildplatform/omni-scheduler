@@ -15,11 +15,7 @@ func (h eventHandler) eventScanRepo(e models.EventScanRepo) error {
 	pool := solv.NewPool()
 	defer pool.Free()
 
-	c := NewChecker(
-		h.gctx,
-		fmt.Sprintf("%s/%s", e.Project, e.Repository),
-		h.gctx.arch,
-	)
+	c := NewChecker(h.gctx, genprp(e.Project, e.Repository), h.gctx.arch)
 
 	return c.addRepo(pool, c.prp)
 }
