@@ -1,74 +1,16 @@
 package solv
 
 /*
-#cgo CFLAGS: -I../libsolv/src -I../libsolv/ext
+#cgo CFLAGS: -I../libsolv/src -I../libsolv/ext -I./ext/src
 #cgo LDFLAGS: -L../libsolv/src -lsolv
 #cgo LDFLAGS: -L../libsolv/ext -lsolvext
+#cgo LDFLAGS: -L./ext/lib -lsched
 
 #include <stdlib.h>
-#include "pool.h"
-#include "repo.h"
-#include "repo_solv.h"
-#include "repo_write.h"
 #include "repo_rpmdb.h"
-
-#define MY_ERROR_CODE 100
-
-int
-my_repo_write_filter(Repo *repo, Repokey *key, void *kfdata)
-{
-    int i = 0;
-
-    switch (key->name)
-    {
-        case SOLVABLE_URL:
-        case SOLVABLE_HEADEREND:
-        case SOLVABLE_PACKAGER:
-        case SOLVABLE_GROUP:
-        case SOLVABLE_LICENSE:
-            i = KEY_STORAGE_DROPPED;
-	    break;
-
-        case SOLVABLE_PKGID:
-        case SOLVABLE_CHECKSUM:
-            i = KEY_STORAGE_INCORE;
-	    break;
-
-        default:
-            i = repo_write_stdkeyfilter(repo, key, kfdata);
-            if (i == KEY_STORAGE_VERTICAL_OFFSET)
-                i = KEY_STORAGE_DROPPED;
-    }
-    return i;
-}
-
-int
-my_repodata_write_filtered(Repodata *data, char *filename)
-{
-    FILE *fp = fopen(filename, "w");
-    if (!fp)
-        return MY_ERROR_CODE;
-
-    int v = repodata_write_filtered(data, fp, my_repo_write_filter, 0, 0);
-
-    fclose(fp);
-
-    return v;
-}
-
-int
-my_repo_add_solv(Repo *repo, char *filename) {
-    FILE *fp = fopen(filename, "r");
-    if (!fp)
-        return MY_ERROR_CODE;
-
-    int v = repo_add_solv(repo, fp, 0);
-
-    fclose(fp);
-
-    return v;
-}
-
+#include "ext_pool.h"
+#include "ext_repo.h"
+#include "ext_repodata.h"
 */
 import "C"
 
@@ -199,6 +141,11 @@ func (p *Pool) NewRepo(name string) *Repo {
 
 }
 
+func (p *Pool) CreateWhatProviders() error {
+	C.ext_pool_createwhatprovides(p.pool, C.int(0))
+	return nil
+}
+
 type Repo struct {
 	repo *C.struct_s_Repo
 }
@@ -215,9 +162,9 @@ func (r *Repo) addSolv(filename string) error {
 	s := C.CString(filename)
 	defer freeCString(s)
 
-	if v := C.my_repo_add_solv(r.repo, s); v != 0 {
+	if v := C.ext_repo_add_solv(r.repo, s); v != 0 {
 		return fmt.Errorf(
-			"repo_add_solv return:%d for solv file:%s", v, filename,
+			"ext_repo_add_solv return:%d for solv file:%s", v, filename,
 		)
 	}
 
@@ -274,9 +221,9 @@ func (rd *RepoData) save(filename string) error {
 	s := C.CString(filename)
 	defer freeCString(s)
 
-	if v := C.my_repodata_write_filtered(rd.data, s); v != 0 {
+	if v := C.ext_repodata_write_filtered(rd.data, s); v != 0 {
 		return fmt.Errorf(
-			"my_repodata_write_filtered return:%d for file:%s",
+			"ext_repodata_write_filtered return:%d for file:%s",
 			v, filename,
 		)
 	}
