@@ -12,9 +12,18 @@ import (
 type buildRepo struct {
 }
 
+func isFileAvailable(f string) bool {
+	_, err := os.Stat(f)
+	return err == nil
+}
+
 func addRepoScan(gctx *GCtx, prp, arch string, pool *solv.Pool) error {
 	dir := filepath.Join(gctx.repoRoot, prp, arch, ":full")
 	solvFile := dir + ".solv"
+
+	if isFileAvailable(solvFile) {
+		return pool.RepoFromSolvFile(prp, solvFile)
+	}
 
 	files, err := os.ReadDir(dir)
 	if err != nil {

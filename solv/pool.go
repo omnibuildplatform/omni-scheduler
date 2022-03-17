@@ -8,11 +8,14 @@ package solv
 #include <stdlib.h>
 #include "pool.h"
 #include "repo.h"
+#include "repo_solv.h"
 #include "repo_write.h"
 #include "repo_rpmdb.h"
 
+#define MY_ERROR_CODE 100
+
 int
-myrepowritefilter(Repo *repo, Repokey *key, void *kfdata)
+my_repo_write_filter(Repo *repo, Repokey *key, void *kfdata)
 {
     int i = 0;
 
@@ -40,9 +43,30 @@ myrepowritefilter(Repo *repo, Repokey *key, void *kfdata)
 }
 
 int
-my_repodata_write_filtered(Repodata *data, FILE *fp)
+my_repodata_write_filtered(Repodata *data, char *filename)
 {
-    return repodata_write_filtered(data, fp, myrepowritefilter, 0, 0);
+    FILE *fp = fopen(filename, "w");
+    if (!fp)
+        return MY_ERROR_CODE;
+
+    int v = repodata_write_filtered(data, fp, my_repo_write_filter, 0, 0);
+
+    fclose(fp);
+
+    return v;
+}
+
+int
+my_repo_add_solv(Repo *repo, char *filename) {
+    FILE *fp = fopen(filename, "r");
+    if (!fp)
+        return MY_ERROR_CODE;
+
+    int v = repo_add_solv(repo, fp, 0);
+
+    fclose(fp);
+
+    return v;
 }
 
 */
@@ -56,6 +80,10 @@ import (
 )
 
 const repoCOOKIE = "buildservice repo 1.1"
+
+func freeCString(s *C.char) {
+	C.free(unsafe.Pointer(s))
+}
 
 type commonStrTag struct {
 	tagBuildserviceID           C.int
@@ -72,7 +100,7 @@ type commonStrTag struct {
 func (t *commonStrTag) init(pool *C.struct_s_Pool) {
 	f := func(s string) C.int {
 		cs := C.CString(s)
-		defer C.free(unsafe.Pointer(cs))
+		defer freeCString(cs)
 
 		return C.pool_str2id(pool, cs, C.int(1))
 	}
@@ -126,6 +154,11 @@ func (p *Pool) isPoolUnavailable() bool {
 	return p.pool == nil
 }
 
+func (p *Pool) RepoFromSolvFile(prp, filename string) error {
+	repo := p.NewRepo(prp)
+	return repo.addSolv(filename)
+}
+
 func (p *Pool) RepoFromBins(prp, dir string, bins []string) (func(string) error, error) {
 	if p.isPoolUnavailable() {
 		return nil, fmt.Errorf("pool is unavailable")
@@ -133,7 +166,7 @@ func (p *Pool) RepoFromBins(prp, dir string, bins []string) (func(string) error,
 
 	repo := p.NewRepo(prp)
 
-	rd := repo.repoAddRepoData(0)
+	rd := repo.addRepoData(0)
 
 	n := len(bins)
 
@@ -151,15 +184,15 @@ func (p *Pool) RepoFromBins(prp, dir string, bins []string) (func(string) error,
 		rd.addBin(dir, bin, bins[i+1], p)
 	}
 
-	repo.repoSetStr(C.SOLVID_META, p.tag.tagBuildserviceRepocookie, repoCOOKIE)
-	repo.repoInternalize()
+	repo.setStr(C.SOLVID_META, p.tag.tagBuildserviceRepocookie, repoCOOKIE)
+	repo.internalize()
 
 	return rd.save, nil
 }
 
 func (p *Pool) NewRepo(name string) *Repo {
 	cs := C.CString(name)
-	defer C.free(unsafe.Pointer(cs))
+	defer freeCString(cs)
 
 	r := C.repo_create(p.pool, cs)
 	return &Repo{repo: r}
@@ -170,22 +203,35 @@ type Repo struct {
 	repo *C.struct_s_Repo
 }
 
-func (r *Repo) repoAddRepoData(flag int) *RepoData {
-	rd := C.repo_add_repodata(r.repo, C.int(0))
+func (r *Repo) addRepoData(flag int) *RepoData {
+	rd := C.repo_add_repodata(r.repo, C.int(flag))
 
 	return &RepoData{
 		data: rd,
 	}
 }
 
-func (r *Repo) repoSetStr(solvid, key C.int, str string) {
+func (r *Repo) addSolv(filename string) error {
+	s := C.CString(filename)
+	defer freeCString(s)
+
+	if v := C.my_repo_add_solv(r.repo, s); v != 0 {
+		return fmt.Errorf(
+			"repo_add_solv return:%d for solv file:%s", v, filename,
+		)
+	}
+
+	return nil
+}
+
+func (r *Repo) setStr(solvid, key C.int, str string) {
 	cs := C.CString(str)
-	defer C.free(unsafe.Pointer(cs))
+	defer freeCString(cs)
 
 	C.repo_set_str(r.repo, solvid, key, cs)
 }
 
-func (r *Repo) repoInternalize() {
+func (r *Repo) internalize() {
 	C.repo_internalize(r.repo)
 }
 
@@ -195,7 +241,7 @@ type RepoData struct {
 
 func (rd *RepoData) addBin(dir, bin, binid string, pool *Pool) C.int {
 	cs := C.CString(filepath.Join(dir, bin))
-	defer C.free(unsafe.Pointer(cs))
+	defer freeCString(cs)
 
 	// rpm
 	flag := C.REPO_REUSE_REPODATA |
@@ -212,12 +258,12 @@ func (rd *RepoData) addBin(dir, bin, binid string, pool *Pool) C.int {
 	}
 
 	cs = C.CString(bin)
-	defer C.free(unsafe.Pointer(cs))
+	defer freeCString(cs)
 
 	C.repodata_set_location(rd.data, solvid, C.int(0), nil, cs)
 
 	cs = C.CString(binid)
-	defer C.free(unsafe.Pointer(cs))
+	defer freeCString(cs)
 
 	C.repodata_set_str(rd.data, solvid, pool.tag.tagBuildserviceID, cs)
 
@@ -226,19 +272,14 @@ func (rd *RepoData) addBin(dir, bin, binid string, pool *Pool) C.int {
 
 func (rd *RepoData) save(filename string) error {
 	s := C.CString(filename)
-	defer C.free(unsafe.Pointer(s))
+	defer freeCString(s)
 
-	w := C.CString("w")
-	defer C.free(unsafe.Pointer(w))
-
-	fp := C.fopen(s, w)
-	if fp == nil {
-		return fmt.Errorf("can't open file:%s", filename)
+	if v := C.my_repodata_write_filtered(rd.data, s); v != 0 {
+		return fmt.Errorf(
+			"my_repodata_write_filtered return:%d for file:%s",
+			v, filename,
+		)
 	}
-	defer C.fclose(fp)
-
-	//C.repodata_write_filtered(rd.data, fp, C.myrepowritefilter, nil, nil)
-	C.my_repodata_write_filtered(rd.data, fp)
 
 	return nil
 }
