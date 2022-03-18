@@ -12,6 +12,8 @@
 extern "C" {
 #endif
 
+extern Pool * ext_pool_create();
+
 extern void ext_pool_createwhatprovides(Pool *pool, int unorderedrepos);
 
 #ifdef __cplusplus
