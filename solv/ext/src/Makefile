@@ -22,4 +22,4 @@ build: $(OBJ)
 .PHONY: clean
 
 clean:
-	rm *.o *.so ../lib/*
+	rm *.o ../lib/*

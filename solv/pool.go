@@ -11,6 +11,7 @@ package solv
 #include "ext_pool.h"
 #include "ext_repo.h"
 #include "ext_repodata.h"
+#include "ext_knownid.h"
 */
 import "C"
 
@@ -27,55 +28,15 @@ func freeCString(s *C.char) {
 	C.free(unsafe.Pointer(s))
 }
 
-type commonStrTag struct {
-	tagBuildserviceID           C.int
-	tagBuildserviceRepocookie   C.int
-	tagBuildserviceExternal     C.int
-	tagBuildserviceDodurl       C.int
-	tagBuildserviceDodcookie    C.int
-	tagBuildserviceDodresources C.int
-	tagBuildserviceAnnotation   C.int
-	tagBuildserviceModules      C.int
-	tagDirectdepsend            C.int
-}
-
-func (t *commonStrTag) init(pool *C.struct_s_Pool) {
-	f := func(s string) C.int {
-		cs := C.CString(s)
-		defer freeCString(cs)
-
-		return C.pool_str2id(pool, cs, C.int(1))
-	}
-
-	t.tagBuildserviceID = f("buildservice:id")
-	t.tagBuildserviceRepocookie = f("buildservice:repocookie")
-	t.tagBuildserviceExternal = f("buildservice:external")
-	t.tagBuildserviceDodurl = f("buildservice:dodurl")
-	t.tagBuildserviceDodcookie = f("buildservice:dodcookie")
-	t.tagBuildserviceDodresources = f("buildservice:dodresources")
-	t.tagBuildserviceAnnotation = f("buildservice:annotation")
-	t.tagBuildserviceModules = f("buildservice:modules")
-	t.tagDirectdepsend = f("-directdepsend--")
-}
-
 type Pool struct {
 	pool *C.struct_s_Pool
-	tag  *commonStrTag
 }
 
 func NewPool() *Pool {
-	pool := C.pool_create()
-
-	C.pool_setdisttype(pool, C.DISTTYPE_RPM)
-
-	tag := new(commonStrTag)
-	tag.init(pool)
-
-	C.pool_freeidhashes(pool)
+	pool := C.ext_pool_create()
 
 	return &Pool{
 		pool: pool,
-		tag:  tag,
 	}
 }
 
@@ -126,7 +87,8 @@ func (p *Pool) RepoFromBins(prp, dir string, bins []string) (func(string) error,
 		rd.addBin(dir, bin, bins[i+1], p)
 	}
 
-	repo.setStr(C.SOLVID_META, p.tag.tagBuildserviceRepocookie, repoCOOKIE)
+	key := C.pool_str2id(p.pool, C.ID_BUILDSERVICE_REPOCOOKIE, 0)
+	repo.setStr(C.SOLVID_META, key, repoCOOKIE)
 	repo.internalize()
 
 	return rd.save, nil
@@ -212,7 +174,8 @@ func (rd *RepoData) addBin(dir, bin, binid string, pool *Pool) C.int {
 	cs = C.CString(binid)
 	defer freeCString(cs)
 
-	C.repodata_set_str(rd.data, solvid, pool.tag.tagBuildserviceID, cs)
+	key := C.pool_str2id(pool.pool, C.ID_BUILDSERVICE_ID, 0)
+	C.repodata_set_str(rd.data, solvid, key, cs)
 
 	return solvid
 }
