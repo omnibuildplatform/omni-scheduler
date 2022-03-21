@@ -50,3 +50,31 @@ ext_pool_create()
 
   return pool;
 }
+
+int
+ext_pool_is_considered_packages(Pool *pool, Id p)
+{
+  return (MAPTST(pool->considered, p)) ? 1 : 0;
+}
+
+const char *
+ext_pool_pkg2reponame(Pool *pool, Id p)
+{
+  Repo *repo = pool->solvables[p].repo;
+  return repo ? repo->name : 0;
+}
+
+const char *
+ext_pool_pkg2name(Pool *pool, Id p)
+{
+  return pool_id2str(pool, pool->solvables[p].name);
+}
+
+const char *
+ext_pool_pkg2srcname(Pool *pool, Id p)
+{
+  if (solvable_lookup_void(pool->solvables + p, SOLVABLE_SOURCENAME))
+    return pool_id2str(pool, pool->solvables[p].name);
+
+  return solvable_lookup_str(pool->solvables + p, SOLVABLE_SOURCENAME);
+}
