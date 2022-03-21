@@ -44,6 +44,12 @@ type Checker struct {
 	prptype       string
 	packs         []string // pakcage's name list
 	genMetaAlgo   int
+
+	dep2pkg  map[string]int
+	dep2src  map[string]string
+	localDep []string
+	notready []string
+	subPacks map[string][]string
 }
 
 func NewChecker(gctx *GCtx, prp, arch string) *Checker {
@@ -119,6 +125,35 @@ func (c *Checker) PreparePool() (pool *solv.Pool, status string, err error) {
 		}
 
 	}
+
+	if err = pool.CreateWhatProviders(); err != nil {
+		return
+	}
+
+	c.dep2pkg = make(map[string]int)
+	c.dep2src = make(map[string]string)
+	c.localDep = []string{}
+	c.notready = []string{}
+	c.subPacks = make(map[string][]string)
+
+	pool.PrepareHash(c.prp, func(solvIndex int, reponame, pkgname, pkgSourceName string) {
+		c.dep2pkg[pkgname] = solvIndex
+		c.dep2src[pkgname] = pkgSourceName
+
+		if v, ok := c.subPacks[pkgSourceName]; ok {
+			c.subPacks[pkgSourceName] = append(v, pkgname)
+		} else {
+			c.subPacks[pkgSourceName] = []string{pkgname}
+		}
+
+		if reponame == c.prp {
+			c.localDep = append(c.localDep, pkgname)
+		} else {
+			if c.gctx.isNotReady(reponame, pkgSourceName) {
+				c.notready = append(c.notready, pkgSourceName)
+			}
+		}
+	})
 
 	status = schedStatusScheduling
 

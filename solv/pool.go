@@ -108,6 +108,28 @@ func (p *Pool) CreateWhatProviders() error {
 	return nil
 }
 
+func (p *Pool) PrepareHash(prp string, set func(int, string, string, string)) error {
+	n := int(p.pool.nsolvables)
+	pool := p.pool
+
+	for i := 2; i < n; i++ {
+		j := C.int(i)
+
+		if 0 == C.ext_pool_is_considered_packages(pool, j) {
+			continue
+		}
+
+		set(
+			i,
+			C.GoString(C.ext_pool_pkg2reponame(pool, j)),
+			C.GoString(C.ext_pool_pkg2name(pool, j)),
+			C.GoString(C.ext_pool_pkg2srcname(pool, j)),
+		)
+	}
+
+	return nil
+}
+
 type Repo struct {
 	repo *C.struct_s_Repo
 }
