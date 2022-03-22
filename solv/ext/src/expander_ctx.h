@@ -42,6 +42,8 @@ typedef struct _ExpanderCtx {
   Solvable *ignore_s;		/* small hack: ignore requires of this solvable */
 } ExpanderCtx;
 
+int pool_is_complex_dep(Pool *pool, Id dep);
+
 void expander_installed_complexdep(ExpanderCtx *xpctx, Id p, Id dep, int deptype);
 
 void expander_installed_multiple(ExpanderCtx *xpctx, Queue *toinstall);

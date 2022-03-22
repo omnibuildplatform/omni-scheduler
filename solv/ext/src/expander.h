@@ -81,12 +81,9 @@ extern void expander_init_ignore(Expander *xp, char *pkg);
 extern void expander_init_conflict(Expander *xp, char *pkg);
 extern void expander_init_file_provides(Expander *xp, char *file, char *provides);
 
-int pool_is_complex_dep(Pool *pool, Id dep);
-
 void expander_dbg(Expander *xp, const char *format, ...);
 
 const char * expander_solvid2name(Expander *xp, Id p);
-
 const char * expander_solvid2str(Expander *xp, Id p);
 
 #ifdef __cplusplus

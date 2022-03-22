@@ -95,6 +95,35 @@ distribute_depblocks(ExpanderCtx *xpctx, Queue *bq, int start, int start2, int f
   return -1;
 }
 
+static int
+pool_is_complex_dep_rd(Pool *pool, Reldep *rd)
+{
+  for (;;)
+    {
+      if (rd->flags == REL_AND || rd->flags == REL_COND || rd->flags == REL_UNLESS)        /* those are the complex ones */
+        return 1;
+      if (rd->flags != REL_OR)
+        return 0;
+      if (ISRELDEP(rd->name) && pool_is_complex_dep_rd(pool, GETRELDEP(pool, rd->name)))
+        return 1;
+      if (!ISRELDEP(rd->evr))
+        return 0;
+      rd = GETRELDEP(pool, rd->evr);
+    }
+}
+
+int
+pool_is_complex_dep(Pool *pool, Id dep)
+{
+  if (ISRELDEP(dep))
+    {
+      Reldep *rd = GETRELDEP(pool, dep);
+      if (rd->flags >= 8 && pool_is_complex_dep_rd(pool, rd))
+        return 1;
+    }
+  return 0;
+}
+
 static int normalize_dep(ExpanderCtx *xpctx, Id dep, Queue *bq, int flags);
 
 static int
