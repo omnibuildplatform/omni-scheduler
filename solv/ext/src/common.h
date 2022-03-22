@@ -31,6 +31,17 @@ int match_modules_req(Pool *pool, Id id);
 
 Id str2id_dup(Pool *pool, const char *str);
 
+static inline Id
+id2name(Pool *pool, Id id)
+{
+  while (ISRELDEP(id))
+    {
+      Reldep *rd = GETRELDEP(pool, id);
+      id = rd->name;
+    }
+  return id;
+}
+
 #ifdef __cplusplus
 }
 #endif
