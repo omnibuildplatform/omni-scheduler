@@ -5,9 +5,8 @@
  *
  */
 
-#include "repo.h"
-#include "common.h"
 #include "ext_pool.h"
+#include "common.h"
 
 void create_considered(Pool *pool, Repo *repoonly, Map *considered, int unorderedrepos);
 
