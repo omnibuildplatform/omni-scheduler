@@ -5,7 +5,6 @@
  *
  */
 
-#include "repo.h"
 #include "common.h"
 
 const char *ID_DIRECTDEPSEND             = "-directdepsend--";
@@ -59,4 +58,17 @@ match_modules_req(Pool *pool, Id id)
 	return 1;
     }
   return 0;
+}
+
+Id
+str2id_dup(Pool *pool, const char *str)
+{
+  char buf[256];
+  size_t l = strlen(str);
+  if (l < 256) {
+    memcpy(buf, str, l + 1);
+    return pool_str2id(pool, buf, 1);
+  } else {
+    return pool_str2id(pool, pool_tmpjoin(pool, str, 0, 0), 1);
+  }
 }

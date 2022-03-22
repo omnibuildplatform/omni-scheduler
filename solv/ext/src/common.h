@@ -29,6 +29,8 @@ int has_keyname(Repo *repo, Id keyname);
 
 int match_modules_req(Pool *pool, Id id);
 
+Id str2id_dup(Pool *pool, const char *str);
+
 #ifdef __cplusplus
 }
 #endif

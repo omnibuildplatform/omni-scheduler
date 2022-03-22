@@ -5,8 +5,8 @@
  *
  */
 
-#include "repo_write.h"
 #include "ext_repodata.h"
+#include "repo_write.h"
 
 #define MY_ERROR_CODE 100
 
