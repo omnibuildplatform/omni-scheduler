@@ -81,6 +81,8 @@ extern void expander_init_ignore(Expander *xp, char *pkg);
 extern void expander_init_conflict(Expander *xp, char *pkg);
 extern void expander_init_file_provides(Expander *xp, char *file, char *provides);
 
+extern int expander_expand(Expander *xp, Queue *in, Queue *indep, Queue *out, Queue *ignoreq, int options);
+
 void expander_dbg(Expander *xp, const char *format, ...);
 
 const char * expander_solvid2name(Expander *xp, Id p);

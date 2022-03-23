@@ -24,7 +24,7 @@ expander_growmaps(Expander *xp)
   MAPEXP(&xp->conflicts, pool->ss.nstrings);
 }
 
-static int
+int
 expander_expand(Expander *xp, Queue *in, Queue *indep, Queue *out, Queue *ignoreq, int options)
 {
   ExpanderCtx xpctx;
