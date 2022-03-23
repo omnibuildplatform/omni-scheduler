@@ -42,6 +42,33 @@ typedef struct _ExpanderCtx {
   Solvable *ignore_s;		/* small hack: ignore requires of this solvable */
 } ExpanderCtx;
 
+int pool_is_complex_dep(Pool *pool, Id dep);
+
+void expander_installed_complexdep(ExpanderCtx *xpctx, Id p, Id dep, int deptype);
+
+void expander_installed_multiple(ExpanderCtx *xpctx, Queue *toinstall);
+
+int findconflictsinfo(ExpanderCtx *xpctx, Id p, int recorderrors);
+
+void add_recommended_packages(ExpanderCtx *xpctx, Solvable *s);
+
+int expander_checkconflicts(ExpanderCtx *xpctx, Id p, Id *conflicts, int isobsoletes, int recorderrors);
+
+int expander_dep_fulfilled(ExpanderCtx *xpctx, Id dep);
+
+void add_noproviderinfo(ExpanderCtx *xpctx, Id dep, Id who);
+
+int prune_neg_prefers(ExpanderCtx *xpctx, Id who, Id *e, int n);
+
+int prune_pos_prefers(ExpanderCtx *xpctx, Id who, Id *e, int n, int domulti);
+
+int prune_or_dep(ExpanderCtx *xpctx, Id dep, Id *e, int n);
+
+int prune_supplemented(ExpanderCtx *xpctx, Id *e, int n);
+
+void expander_updaterecommendedmap(ExpanderCtx *xpctx);
+
+
 #ifdef __cplusplus
 }
 #endif

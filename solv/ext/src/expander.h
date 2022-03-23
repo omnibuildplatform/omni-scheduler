@@ -23,6 +23,22 @@ extern "C" {
 #define EXPANDER_OPTION_USERECOMMENDSFORCHOICES		(1 << 4)
 #define EXPANDER_OPTION_USESUPPLEMENTSFORCHOICES	(1 << 5)
 
+#define DEPTYPE_REQUIRES		0
+#define DEPTYPE_CONFLICTS		1
+#define DEPTYPE_OBSOLETES		2
+#define DEPTYPE_RECOMMENDS		3
+
+#define ERROR_NOPROVIDER		1
+#define ERROR_CHOICE			2
+#define ERROR_CONFLICTINGPROVIDERS	3
+#define ERROR_PROVIDERINFO		4
+#define ERROR_PROVIDERINFO2		5
+#define ERROR_BADDEPENDENCY		6
+#define ERROR_CONFLICT			7
+#define ERROR_CONFLICT2			8
+#define ERROR_ALLCONFLICT		9
+#define ERROR_NOPROVIDERINFO		10
+
 #define MAPEXP(m, n) ((m)->size < (((n) + 8) >> 3) ? map_grow(m, n + 256) : 0)
 
 typedef struct _Expander {
@@ -64,6 +80,13 @@ extern void expander_init_prefer(Expander *xp, char *pkg);
 extern void expander_init_ignore(Expander *xp, char *pkg);
 extern void expander_init_conflict(Expander *xp, char *pkg);
 extern void expander_init_file_provides(Expander *xp, char *file, char *provides);
+
+extern int expander_expand(Expander *xp, Queue *in, Queue *indep, Queue *out, Queue *ignoreq, int options);
+
+void expander_dbg(Expander *xp, const char *format, ...);
+
+const char * expander_solvid2name(Expander *xp, Id p);
+const char * expander_solvid2str(Expander *xp, Id p);
 
 #ifdef __cplusplus
 }

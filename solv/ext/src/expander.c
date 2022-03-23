@@ -9,6 +9,8 @@
 #include "common.h"
 #include "util.h"
 
+#include<stdarg.h>
+
 Expander *
 new_expander(Pool *pool, int debug, int options)
 {
@@ -220,4 +222,62 @@ expander_init_file_provides(Expander *xp, char *file, char *provides)
   expander_set_file_provides(xp, fileId, &fileprovides);
 
   queue_free(&fileprovides);
+}
+
+void
+expander_dbg(Expander *xp, const char *format, ...)
+{
+  va_list args;
+  char buf[1024];
+  int l;
+
+  if (!xp->debug)
+    return;
+  va_start(args, format);
+  vsnprintf(buf, sizeof(buf), format, args);
+  va_end(args);
+  l = strlen(buf);
+  if ((xp->debug & (EXPANDER_DEBUG_ALL | EXPANDER_DEBUG_STDOUT)) != 0)
+    {
+      printf("%s", buf);
+      if (buf[0] != ' ' || (l && buf[l - 1] == '\n'))
+        fflush(stdout);
+    }
+  if ((xp->debug & (EXPANDER_DEBUG_ALL | EXPANDER_DEBUG_STR)) != 0)
+    {
+      if (l >= xp->debugstrf)	/* >= because of trailing \0 */
+	{
+	  xp->debugstr = solv_realloc(xp->debugstr, xp->debugstrl + l + 1024);
+	  xp->debugstrf = l + 1024;
+	}
+      strcpy(xp->debugstr + xp->debugstrl, buf);
+      xp->debugstrl += l;
+      xp->debugstrf -= l;
+    }
+}
+
+const char *
+expander_solvid2name(Expander *xp, Id p)
+{
+  const char *n = pool_id2str(xp->pool, xp->pool->solvables[p].name);
+  Repo *r; 
+  if (!xp->debug)
+    return n;
+  r = xp->pool->solvables[p].repo;
+  if (!r) 
+    return n;
+  return pool_tmpjoin(xp->pool, n, "@", r->name);
+}
+
+const char *
+expander_solvid2str(Expander *xp, Id p)
+{
+  const char *n = pool_solvid2str(xp->pool, p);
+  Repo *r; 
+  if (!xp->debug)
+    return n;
+  r = xp->pool->solvables[p].repo;
+  if (!r) 
+    return n;
+  return pool_tmpjoin(xp->pool, n, "@", r->name);
 }
