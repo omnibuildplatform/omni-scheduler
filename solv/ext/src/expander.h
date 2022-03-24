@@ -75,6 +75,7 @@ typedef struct s_Expander {
 } Expander;
 
 extern Expander * new_expander(Pool *pool, int debug, int options);
+extern void expander_free(Expander *xp);
 
 extern void expander_init_prefer(Expander *xp, char *pkg);
 extern void expander_init_ignore(Expander *xp, char *pkg);

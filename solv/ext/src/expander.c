@@ -33,6 +33,31 @@ new_expander(Pool *pool, int debug, int options)
   return xp;
 }
 
+void
+expander_free(Expander *xp)
+{
+  if (!xp)
+    return;
+
+  map_free(&xp->ignored);
+  map_free(&xp->ignoredx);
+
+  queue_free(&xp->preferposq);
+  map_free(&xp->preferpos);
+  map_free(&xp->preferposx);
+
+  map_free(&xp->preferneg);
+  map_free(&xp->prefernegx);
+
+  queue_free(&xp->conflictsq);
+  map_free(&xp->conflicts);
+
+  if (xp->debugstr)
+    solv_free(xp->debugstr);
+
+  solv_free(xp);
+}
+
 /*
  * initialize the prefer of expander
  */

@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-typedef struct _ExpanderCtx {
+typedef struct s_ExpanderCtx {
   Pool *pool;
   Expander *xp;
   Queue *out;			/* the result */
