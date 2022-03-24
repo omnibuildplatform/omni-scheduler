@@ -34,14 +34,16 @@ type Pool struct {
 }
 
 func NewPool() *Pool {
-	pool := C.ext_pool_create()
-
 	return &Pool{
-		pool: pool,
+		pool: C.ext_pool_create(),
 	}
 }
 
 func (p *Pool) Free() {
+	if p == nil {
+		return
+	}
+
 	C.pool_free(p.pool)
 	p.pool = nil
 }
@@ -219,6 +221,21 @@ func (rd *RepoData) save(filename string) error {
 
 type Expander struct {
 	xp *C.struct_s_Expander
+}
+
+func NewExpander(pool *Pool) *Expander {
+	return &Expander{
+		xp: C.new_expander(pool.pool, 0, 0),
+	}
+}
+
+func (e *Expander) Free() {
+	if e == nil {
+		return
+	}
+
+	C.expander_free(e.xp)
+	e.xp = nil
 }
 
 func (e *Expander) expand(deps []string) ([]string, error) {

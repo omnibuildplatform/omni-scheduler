@@ -14,14 +14,12 @@ extern "C" {
 
 extern Pool * ext_pool_create();
 
-extern void ext_pool_createwhatprovides(Pool *pool, int unorderedrepos);
-
 extern int ext_pool_is_considered_packages(Pool *pool, Id p);
 
+extern void ext_pool_createwhatprovides(Pool *pool, int unorderedrepos);
+
 extern const char * ext_pool_pkg2reponame(Pool *pool, Id p);
-
 extern const char * ext_pool_pkg2name(Pool *pool, Id p);
-
 extern const char * ext_pool_pkg2srcname(Pool *pool, Id p);
 
 #ifdef __cplusplus

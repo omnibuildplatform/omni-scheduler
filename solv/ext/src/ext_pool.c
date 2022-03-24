@@ -8,26 +8,6 @@
 #include "ext_pool.h"
 #include "common.h"
 
-void create_considered(Pool *pool, Repo *repoonly, Map *considered, int unorderedrepos);
-
-/*
- * create what providers
- */
-void
-ext_pool_createwhatprovides(Pool *pool, int unorderedrepos)
-{
-  if (pool->considered)
-  {
-    map_free(pool->considered);
-    solv_free(pool->considered);
-  }
-  pool->considered = solv_calloc(sizeof(Map), 1);
-
-  create_considered(pool, 0, pool->considered, unorderedrepos);
-
-  pool_createwhatprovides(pool);
-}
-
 Pool *
 ext_pool_create()
 {
@@ -48,6 +28,26 @@ ext_pool_create()
   pool_freeidhashes(pool);
 
   return pool;
+}
+
+extern void create_considered(Pool *pool, Repo *repoonly, Map *considered, int unorderedrepos);
+
+/*
+ * create what providers
+ */
+void
+ext_pool_createwhatprovides(Pool *pool, int unorderedrepos)
+{
+  if (pool->considered)
+  {
+    map_free(pool->considered);
+    solv_free(pool->considered);
+  }
+  pool->considered = solv_calloc(sizeof(Map), 1);
+
+  create_considered(pool, 0, pool->considered, unorderedrepos);
+
+  pool_createwhatprovides(pool);
 }
 
 int
