@@ -245,11 +245,11 @@ expander_dbg(Expander *xp, const char *format, ...)
     }
   if ((xp->debug & (EXPANDER_DEBUG_ALL | EXPANDER_DEBUG_STR)) != 0)
     {
-      if (l >= xp->debugstrf)	/* >= because of trailing \0 */
-	{
-	  xp->debugstr = solv_realloc(xp->debugstr, xp->debugstrl + l + 1024);
-	  xp->debugstrf = l + 1024;
-	}
+      if (l >= xp->debugstrf)        /* >= because of trailing \0 */
+        {
+          xp->debugstr = solv_realloc(xp->debugstr, xp->debugstrl + l + 1024);
+          xp->debugstrf = l + 1024;
+        }
       strcpy(xp->debugstr + xp->debugstrl, buf);
       xp->debugstrl += l;
       xp->debugstrf -= l;

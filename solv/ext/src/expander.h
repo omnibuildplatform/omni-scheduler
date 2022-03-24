@@ -41,7 +41,7 @@ extern "C" {
 
 #define MAPEXP(m, n) ((m)->size < (((n) + 8) >> 3) ? map_grow(m, n + 256) : 0)
 
-typedef struct _Expander {
+typedef struct s_Expander {
   Pool *pool;
 
   Map ignored;
@@ -81,12 +81,10 @@ extern void expander_init_ignore(Expander *xp, char *pkg);
 extern void expander_init_conflict(Expander *xp, char *pkg);
 extern void expander_init_file_provides(Expander *xp, char *file, char *provides);
 
-extern int expander_expand(Expander *xp, Queue *in, Queue *indep, Queue *out, Queue *ignoreq, int options);
-
-void expander_dbg(Expander *xp, const char *format, ...);
-
 const char * expander_solvid2name(Expander *xp, Id p);
 const char * expander_solvid2str(Expander *xp, Id p);
+
+void expander_dbg(Expander *xp, const char *format, ...);
 
 #ifdef __cplusplus
 }
