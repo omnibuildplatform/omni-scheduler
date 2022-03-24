@@ -12,6 +12,7 @@ package solv
 #include "ext_repo.h"
 #include "ext_repodata.h"
 #include "ext_knownid.h"
+#include "transitive_deps.h"
 */
 import "C"
 
@@ -214,4 +215,59 @@ func (rd *RepoData) save(filename string) error {
 	}
 
 	return nil
+}
+
+type Expander struct {
+	xp *C.struct_s_Expander
+}
+
+func (e *Expander) expand(deps []string) ([]string, error) {
+	td := C.new_Transitive_Deps(e.xp)
+	defer C.transitive_deps_free(td)
+
+	pre := func(dep string) {
+		s := C.CString(dep)
+		defer freeCString(s)
+
+		C.transitive_deps_pre_expand(td, s)
+	}
+
+	for _, dep := range deps {
+		pre(dep)
+	}
+
+	nerrors := C.transitive_deps_expand(td)
+
+	if nerrors == 0 {
+		n := int(td.out.count)
+		r := make([]string, 0, n)
+
+		for i := 0; i < n; i++ {
+			s := C.transitive_deps_get_dep(td, C.int(i))
+			r = append(r, C.GoString(s))
+		}
+
+		return r, nil
+	}
+
+	return nil, e.parseExpandError(td, int(nerrors))
+}
+
+func (e *Expander) parseExpandError(td *C.struct_s_Transitive_Deps, nerrors int) error {
+	p := C.CBytes(make([]byte, 1024))
+	defer C.free(p)
+
+	buf := (*C.char)(p)
+	strs := make([]string, 0, nerrors)
+
+	i := C.int(0)
+	for {
+		if i = C.transitive_deps_get_expand_error(td, i, buf); i == 0 {
+			break
+		}
+
+		strs = append(strs, string(C.GoBytes(p, C.int(C.strlen(buf)))))
+	}
+
+	return fmt.Errorf(strings.Join(strs, ", "))
 }
