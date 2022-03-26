@@ -12,7 +12,7 @@
 #define HASHCHAIN_NEXT(h, hh, mask) (((h) + (hh)++) & (mask))
 
 Deps_Sort *
-new_Deps_Sort(int packs_num)
+deps_sort_create()
 {
   Deps_Sort *ds;
 
@@ -25,7 +25,7 @@ new_Deps_Sort(int packs_num)
 }
 
 void
-deps_sort_free(Deps_Sort *ds, int packs_num)
+deps_sort_free(Deps_Sort *ds)
 {
   if (!ds)
     return;
@@ -324,19 +324,62 @@ deps_sort_start(Deps_Sort *ds, int depsortsccs)
     queue_truncate(&cycles, didsccs - 1);
 
   /* record cycles */
-  int n;
+  int n, gn = 0;
   for (i = 0; i < cycles.count; i++)
   {
     for (n = 0; cycles.elements[i]; i++, n++)
       queue_push(&ds->cycles, cycles.elements[i]);
 
     if (n > 0)
+    {
       queue_push(&ds->cycles, n);
+      gn++;
+    }
   }
+  if (gn > 0)
+    queue_push(&ds->cycles, gn);
 
   queue_free(&cycles);
   queue_free(&todo);
   solv_free(mark);
 
   return 1;
+}
+
+int
+deps_sort_get_pkg_num(Deps_Sort *ds)
+{
+  return ds->out.count;
+}
+
+const char *
+deps_sort_get_pkg(Deps_Sort *ds)
+{
+  Id id = queue_shift(&ds->out);
+  if (id == 0)
+    return 0;
+
+  return ds->names[id];
+}
+
+int
+deps_sort_get_cycles_total_group_num(Deps_Sort *ds)
+{
+  return queue_pop(&ds->cycles);
+}
+
+int
+deps_sort_get_cycles_next_group_num(Deps_Sort *ds)
+{
+  return queue_pop(&ds->cycles);
+}
+
+const char *
+deps_sort_get_cycles_next_group_member(Deps_Sort *ds)
+{
+  Id id = queue_pop(&ds->cycles);
+  if (id == 0)
+    return 0;
+
+  return ds->names[id];
 }
