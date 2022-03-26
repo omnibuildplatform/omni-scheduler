@@ -13,6 +13,7 @@ package solv
 #include "ext_repodata.h"
 #include "ext_knownid.h"
 #include "transitive_deps.h"
+#include "project_info.h"
 */
 import "C"
 
@@ -21,6 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 	"unsafe"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const repoCOOKIE = "buildservice repo 1.1"
@@ -131,6 +134,89 @@ func (p *Pool) PrepareHash(prp string, set func(int, string, string, string)) er
 	}
 
 	return nil
+}
+
+func (p *Pool) PrepareHash1(prp string, prpNotReady map[string]sets.String) (
+	localdeps sets.String,
+	dep2pkg map[string]int,
+	subPacks map[string]sets.String,
+	dep2src map[string]string,
+	notready sets.String,
+) {
+	pi := C.new_Project_Info(p.pool)
+	defer C.project_info_free(pi)
+
+	s := C.CString(prp)
+	defer freeCString(s)
+
+	C.project_info_parse(pi, s)
+
+	n := int(C.project_info_get_localdeps_num(pi))
+	localdeps = sets.NewString()
+	for ; n > 0; n-- {
+		cs := C.project_info_get_localdeps_dep(pi)
+		localdeps.Insert(C.GoString(cs))
+	}
+
+	dep2pkg = make(map[string]int)
+	n = int(C.project_info_get_dep2pkg_num(pi))
+	for ; n > 0; n-- {
+		cs := C.project_info_get_dep2pkg_dep(pi)
+
+		dep2pkg[C.GoString(cs)] = int(C.project_info_get_dep2pkg_pkg(pi))
+	}
+
+	subPacks = make(map[string]sets.String)
+	for {
+		n = int(C.project_info_get_subpacks_next_group_num(pi))
+		if n == 0 {
+			break
+		}
+
+		key := C.project_info_get_subpacks_next_group_member(pi)
+		n -= 1
+
+		v := sets.NewString()
+		for ; n > 0; n-- {
+			cs := C.project_info_get_subpacks_next_group_member(pi)
+			v.Insert(C.GoString(cs))
+		}
+
+		subPacks[C.GoString(key)] = v
+	}
+
+	dep2src = make(map[string]string)
+	n = int(C.project_info_get_dep2src_num(pi))
+	for ; n > 0; n-- {
+		k := C.project_info_get_dep2src(pi)
+		v := C.project_info_get_dep2src(pi)
+
+		dep2src[C.GoString(k)] = C.GoString(v)
+	}
+
+	notready = sets.NewString()
+	for {
+		n = int(C.project_info_get_nonlocal_depsrcs_next_group_num(pi))
+		if n == 0 {
+			break
+		}
+
+		key := C.project_info_get_nonlocal_depsrcs_repo_name(pi)
+		n -= 1
+
+		v := sets.NewString()
+		for ; n > 0; n-- {
+			cs := C.project_info_get_nonlocal_depsrcs_src(pi)
+			v.Insert(C.GoString(cs))
+		}
+
+		repo := C.GoString(key)
+		if s1, ok := prpNotReady[repo]; ok {
+			notready = notready.Union(v.Intersection(s1))
+		}
+	}
+
+	return
 }
 
 type Repo struct {
