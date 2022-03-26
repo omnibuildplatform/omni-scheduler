@@ -14,6 +14,7 @@ package solv
 #include "ext_knownid.h"
 #include "transitive_deps.h"
 #include "project_info.h"
+#include "deps_sort.h"
 */
 import "C"
 
@@ -373,4 +374,113 @@ func (e *Expander) parseExpandError(td *C.struct_s_Transitive_Deps, nerrors int)
 	}
 
 	return fmt.Errorf(strings.Join(strs, ", "))
+}
+
+/*
+  pdeps
+    key: pkg name
+    value: extended dependencies
+
+  dep2src
+    map of pkg name to its source name for all extended denpendencies
+    key: the pkg name
+    value: source name
+
+  pkg2src
+    map of pkg name to its source name for the packages of current project
+    key: the pkg name
+    value: source name
+
+  packs:
+    list of pkg name for the packages of current project
+*/
+func Depsort(
+	pdeps map[string]sets.String,
+	dep2src map[string]string,
+	pkg2src map[string]string,
+	packs sets.String,
+) (cycles [][]string, newpacks sets.String, err error) {
+
+	newPkg2src := make(map[string]string)
+	for k := range packs {
+		if v, ok := pkg2src[k]; ok {
+			newPkg2src[k] = v
+		} else {
+			newPkg2src[k] = k
+		}
+	}
+
+	ds := C.deps_sort_create()
+	defer C.deps_sort_free(ds)
+
+	C.deps_sort_add_pkg_init(ds, C.int(len(newPkg2src)))
+
+	addPkgSrc := func(pkg, src string) C.int {
+		p := C.CString(pkg)
+		s := C.CString(src)
+
+		defer func() {
+			freeCString(p)
+			freeCString(s)
+		}()
+
+		return C.deps_sort_add_pkg_src(ds, p, s)
+	}
+
+	pkgID := make(map[string]C.int)
+	for k, v := range newPkg2src {
+		pkgID[k] = addPkgSrc(k, v)
+	}
+
+	C.deps_sort_add_dep_init(ds)
+
+	addDepsrc := func(pkgid C.int, depsrc string) {
+		s := C.CString(depsrc)
+		defer freeCString(s)
+
+		C.deps_sort_add_dep_of_pkg(ds, pkgid, s)
+	}
+
+	for pkg, index := range pkgID {
+		edgestart := C.deps_sort_pre_add_dep_of_pkg(ds)
+
+		for k := range pdeps[pkg] {
+			if depsrc, ok := dep2src[k]; ok {
+				addDepsrc(index, depsrc)
+			}
+		}
+
+		C.deps_sort_post_add_dep_of_pkg(ds, edgestart)
+	}
+
+	r := C.deps_sort_start(ds, 0)
+	if r == 0 {
+		err = fmt.Errorf("dep sort failed")
+		return
+	}
+
+	n := int(C.deps_sort_get_pkg_num(ds))
+	newpacks = sets.NewString()
+	for ; n > 0; n-- {
+		newpacks.Insert(C.GoString(C.deps_sort_get_pkg(ds)))
+	}
+
+	n = int(C.deps_sort_get_cycles_total_group_num(ds))
+	cycles = make([][]string, 0, n)
+	for {
+		n = int(C.deps_sort_get_cycles_next_group_num(ds))
+		if n == 0 {
+			break
+		}
+
+		v := make([]string, 0, n)
+		for ; n > 0; n-- {
+			cs := C.deps_sort_get_cycles_next_group_member(ds)
+			v = append(v, C.GoString(cs))
+		}
+
+		cycles = append(cycles, v)
+	}
+
+	return
 }
